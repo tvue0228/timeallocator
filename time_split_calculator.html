@@ -1,6 +1,22 @@
 <style>
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-text-success: #15803d;
+  --color-text-danger: #b91c1c;
+  --color-text-info: #1d4ed8;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f3f4f6;
+  --color-background-success: #dcfce7;
+  --color-background-danger: #fee2e2;
+  --color-border-tertiary: #e5e7eb;
+  --color-border-info: #93c5fd;
+  --border-radius-md: 8px;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font-sans); }
+body { font-family: var(--font-sans); background: var(--color-background-primary); color: var(--color-text-primary); }
 .wrap { padding: 1.5rem 0; max-width: 560px; margin: 0 auto; }
 .section { margin-bottom: 1.5rem; }
 label { font-size: 13px; color: var(--color-text-secondary); display: block; margin-bottom: 6px; }
