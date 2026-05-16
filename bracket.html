@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>13-Person Bracket</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #334155;
+  --border: #475569;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --bye: #64748b;
+  --winner-bg: #14532d;
+  --winner-border: #16a34a;
+  --connector: #475569;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  padding: 24px;
+}
+h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.subtitle { color: var(--text2); font-size: 0.875rem; margin-bottom: 24px; }
+
+/* Setup panel */
+#setup {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 480px;
+  margin-bottom: 24px;
+}
+#setup h2 { font-size: 1rem; margin-bottom: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+#names-input {
+  width: 100%;
+  height: 220px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.6;
+}
+#names-input:focus { outline: none; border-color: var(--accent); }
+.input-hint { color: var(--text2); font-size: 0.78rem; margin-top: 6px; margin-bottom: 14px; }
+.btn-row { display: flex; gap: 10px; }
+button {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#btn-generate {
+  background: var(--accent);
+  color: #fff;
+  flex: 1;
+}
+#btn-generate:hover { background: var(--accent-hover); }
+#btn-reset {
+  background: var(--surface2);
+  color: var(--text);
+}
+#btn-reset:hover { background: var(--border); }
+#error-msg {
+  color: #f87171;
+  font-size: 0.82rem;
+  margin-top: 8px;
+  display: none;
+}
+
+/* Bracket */
+#bracket-wrap {
+  display: none;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+.bracket {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  min-width: max-content;
+}
+.round {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.round-label {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  padding: 0 16px 10px;
+}
+.matches {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+}
+.match-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8px;
+  position: relative;
+}
+
+/* connector lines between rounds */
+.match-block.has-connector::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 8px;
+  height: 1px;
+  background: var(--connector);
+}
+
+.match {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  width: 160px;
+  background: var(--surface);
+  margin: 6px 0;
+}
+.slot {
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.slot:last-child { border-bottom: none; }
+.slot:hover { background: var(--surface2); }
+.slot.bye {
+  color: var(--bye);
+  font-style: italic;
+  cursor: default;
+  background: transparent;
+}
+.slot.bye:hover { background: transparent; }
+.slot.winner {
+  background: var(--winner-bg);
+  border-color: var(--winner-border);
+  font-weight: 600;
+}
+.slot.eliminated { opacity: 0.45; text-decoration: line-through; }
+.seed {
+  font-size: 0.68rem;
+  color: var(--text2);
+  min-width: 18px;
+  text-align: right;
+}
+.name-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* champion */
+.champion-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0 12px;
+}
+.champion-box {
+  background: var(--winner-bg);
+  border: 2px solid var(--winner-border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  text-align: center;
+  min-width: 140px;
+}
+.champion-box .trophy { font-size: 1.4rem; }
+.champion-box .label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: #86efac; margin-top: 4px; }
+.champion-box .champ-name { font-size: 0.9rem; font-weight: 700; margin-top: 4px; color: #bbf7d0; min-height: 20px; }
+
+/* connector column */
+.connector-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 16px;
+}
+.connector-pair {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.connector-pair::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 1px;
+  background: var(--connector);
+}
+.connector-pair::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background: var(--connector);
+}
+
+.info-bar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.badge {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  color: var(--text2);
+}
+.badge span { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>13-Person Bracket</h1>
+<p class="subtitle">Single elimination with bye system — click a player to advance them</p>
+
+<div id="setup">
+  <h2>Enter Players</h2>
+  <textarea id="names-input" placeholder="Enter one name per line&#10;&#10;Alice&#10;Bob&#10;Charlie&#10;..."></textarea>
+  <p class="input-hint">Enter exactly 13 names, one per line.</p>
+  <div class="btn-row">
+    <button id="btn-generate">Generate Bracket</button>
+    <button id="btn-reset">Reset</button>
+  </div>
+  <p id="error-msg"></p>
+</div>
+
+<div id="bracket-wrap">
+  <div class="info-bar" id="info-bar"></div>
+  <div class="bracket" id="bracket"></div>
+</div>
+
+<script>
+const TOTAL_SLOTS = 16;
+const NUM_PLAYERS = 13;
+const NUM_BYES = TOTAL_SLOTS - NUM_PLAYERS; // 3
+
+// State
+let rounds = []; // rounds[r] = array of matches; match = [slotA, slotB]
+// slot = { name, isBye, seed, eliminated }
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getNames() {
+  return document.getElementById('names-input').value
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function buildRound1(names) {
+  // Create slots: 13 players + 3 byes, randomly assigned
+  const players = names.map((name, i) => ({ name, isBye: false, seed: i + 1, eliminated: false }));
+  const byes = Array.from({ length: NUM_BYES }, (_, i) => ({ name: 'BYE', isBye: true, seed: null, eliminated: false }));
+  const allSlots = shuffle([...players, ...byes]);
+
+  // Pair into 8 matches
+  const matches = [];
+  for (let i = 0; i < TOTAL_SLOTS; i += 2) {
+    matches.push([allSlots[i], allSlots[i + 1]]);
+  }
+  return matches;
+}
+
+function initLaterRounds() {
+  // Rounds 2-4 start empty (TBD slots)
+  // Round 2: 4 matches, Round 3 (semi): 2 matches, Round 4 (final): 1 match
+  const sizes = [4, 2, 1];
+  for (const size of sizes) {
+    const matches = [];
+    for (let i = 0; i < size; i++) {
+      matches.push([
+        { name: 'TBD', isBye: false, seed: null, eliminated: false, tbd: true },
+        { name: 'TBD', isBye: false, seed: null, eliminated: false, tbd: true }
+      ]);
+    }
+    rounds.push(matches);
+  }
+}
+
+function autoAdvanceByes() {
+  // In round 1, if a match has a bye, automatically mark the other player as winner
+  rounds[0].forEach((match, mi) => {
+    const [a, b] = match;
+    if (a.isBye && !b.isBye) {
+      advanceWinner(0, mi, 1); // b wins (index 1)
+    } else if (b.isBye && !a.isBye) {
+      advanceWinner(0, mi, 0); // a wins (index 0)
+    }
+  });
+}
+
+function advanceWinner(roundIdx, matchIdx, winnerSlotIdx) {
+  const match = rounds[roundIdx][matchIdx];
+  const winner = match[winnerSlotIdx];
+  const loserSlotIdx = winnerSlotIdx === 0 ? 1 : 0;
+  const loser = match[loserSlotIdx];
+
+  // Mark winner/eliminated
+  winner.winner = true;
+  if (!loser.isBye && !loser.tbd) loser.eliminated = true;
+
+  // Place winner in next round
+  if (roundIdx + 1 < rounds.length) {
+    const nextMatchIdx = Math.floor(matchIdx / 2);
+    const nextSlotIdx = matchIdx % 2;
+    const nextSlot = rounds[roundIdx + 1][nextMatchIdx][nextSlotIdx];
+    nextSlot.name = winner.name;
+    nextSlot.seed = winner.seed;
+    nextSlot.tbd = false;
+    nextSlot.isBye = false;
+    nextSlot.eliminated = false;
+    nextSlot.winner = false;
+  }
+}
+
+function getChampion() {
+  const finalMatch = rounds[rounds.length - 1][0];
+  const w = finalMatch.find(s => s.winner && !s.tbd);
+  return w ? w.name : null;
+}
+
+function generate() {
+  const names = getNames();
+  if (names.length !== 13) {
+    showError(`Need exactly 13 names — got ${names.length}.`);
+    return;
+  }
+  const dupes = names.filter((n, i) => names.indexOf(n) !== i);
+  if (dupes.length > 0) {
+    showError(`Duplicate names: ${[...new Set(dupes)].join(', ')}`);
+    return;
+  }
+  showError('');
+
+  rounds = [buildRound1(names)];
+  initLaterRounds();
+  autoAdvanceByes();
+  render();
+  document.getElementById('bracket-wrap').style.display = 'block';
+}
+
+function handleSlotClick(roundIdx, matchIdx, slotIdx) {
+  const match = rounds[roundIdx][matchIdx];
+  const slot = match[slotIdx];
+  if (slot.isBye || slot.tbd || slot.eliminated || slot.winner) return;
+
+  // Check opponent isn't also TBD
+  const otherSlot = match[slotIdx === 0 ? 1 : 0];
+  if (otherSlot.tbd) return;
+
+  // Clear any previous winner state in this match
+  match.forEach(s => {
+    if (s.winner) {
+      s.winner = false;
+      // Cascade: remove from next rounds
+      cascadeRemove(roundIdx, matchIdx);
+    }
+    s.eliminated = false;
+  });
+
+  advanceWinner(roundIdx, matchIdx, slotIdx);
+  render();
+}
+
+function cascadeRemove(roundIdx, matchIdx) {
+  if (roundIdx + 1 >= rounds.length) return;
+  const nextMatchIdx = Math.floor(matchIdx / 2);
+  const nextSlotIdx = matchIdx % 2;
+  const nextMatch = rounds[roundIdx + 1][nextMatchIdx];
+  const slot = nextMatch[nextSlotIdx];
+
+  if (slot.tbd) return;
+  const wasWinner = slot.winner;
+  slot.name = 'TBD';
+  slot.seed = null;
+  slot.tbd = true;
+  slot.winner = false;
+  slot.eliminated = false;
+
+  if (wasWinner) {
+    cascadeRemove(roundIdx + 1, nextMatchIdx);
+    // Also clear the other slot's eliminated flag in that match
+    nextMatch.forEach(s => { s.eliminated = false; });
+  }
+}
+
+function render() {
+  const bracket = document.getElementById('bracket');
+  bracket.innerHTML = '';
+
+  const roundNames = ['Round of 16', 'Quarterfinals', 'Semifinals', 'Final'];
+  const champ = getChampion();
+
+  rounds.forEach((matches, ri) => {
+    // Connector column before this round (except first)
+    if (ri > 0) {
+      const connCol = document.createElement('div');
+      connCol.className = 'connector-col';
+      connCol.style.justifyContent = 'space-around';
+      connCol.style.height = getRoundHeight(ri) + 'px';
+
+      for (let i = 0; i < matches.length; i++) {
+        const pair = document.createElement('div');
+        pair.className = 'connector-pair';
+        pair.style.flex = '1';
+        connCol.appendChild(pair);
+      }
+      bracket.appendChild(connCol);
+    }
+
+    const roundEl = document.createElement('div');
+    roundEl.className = 'round';
+
+    const label = document.createElement('div');
+    label.className = 'round-label';
+    label.textContent = roundNames[ri] || `Round ${ri + 1}`;
+    roundEl.appendChild(label);
+
+    const matchesEl = document.createElement('div');
+    matchesEl.className = 'matches';
+    matchesEl.style.height = getRoundHeight(ri) + 'px';
+
+    matches.forEach((match, mi) => {
+      const block = document.createElement('div');
+      block.className = 'match-block';
+      block.style.flex = '1';
+      block.style.display = 'flex';
+      block.style.flexDirection = 'column';
+      block.style.justifyContent = 'center';
+
+      const matchEl = document.createElement('div');
+      matchEl.className = 'match';
+
+      match.forEach((slot, si) => {
+        const slotEl = document.createElement('div');
+        const classes = ['slot'];
+        if (slot.isBye) classes.push('bye');
+        if (slot.winner) classes.push('winner');
+        if (slot.eliminated) classes.push('eliminated');
+        slotEl.className = classes.join(' ');
+
+        if (slot.seed !== null) {
+          const seedEl = document.createElement('span');
+          seedEl.className = 'seed';
+          seedEl.textContent = slot.seed;
+          slotEl.appendChild(seedEl);
+        }
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'name-text';
+        nameEl.textContent = slot.isBye ? 'BYE' : (slot.tbd ? '—' : slot.name);
+        slotEl.appendChild(nameEl);
+
+        if (!slot.isBye && !slot.tbd && !slot.winner && !slot.eliminated) {
+          const otherSlot = match[si === 0 ? 1 : 0];
+          if (!otherSlot.tbd) {
+            slotEl.title = `Click to advance ${slot.name}`;
+            slotEl.addEventListener('click', () => handleSlotClick(ri, mi, si));
+          }
+        }
+
+        matchEl.appendChild(slotEl);
+      });
+
+      block.appendChild(matchEl);
+      matchesEl.appendChild(block);
+    });
+
+    roundEl.appendChild(matchesEl);
+    bracket.appendChild(roundEl);
+  });
+
+  // Champion box
+  const champConnCol = document.createElement('div');
+  champConnCol.className = 'connector-col';
+  champConnCol.style.height = getRoundHeight(rounds.length - 1) + 'px';
+  champConnCol.style.justifyContent = 'center';
+  champConnCol.style.alignItems = 'center';
+  const champPair = document.createElement('div');
+  champPair.style.flex = '1';
+  champPair.style.position = 'relative';
+  champPair.style.width = '100%';
+  champPair.innerHTML = `<div style="position:absolute;left:0;top:50%;width:100%;height:1px;background:var(--connector)"></div>`;
+  champConnCol.appendChild(champPair);
+  bracket.appendChild(champConnCol);
+
+  const champWrap = document.createElement('div');
+  champWrap.className = 'champion-wrap';
+  champWrap.style.height = getRoundHeight(rounds.length - 1) + 'px';
+  champWrap.innerHTML = `
+    <div class="champion-box">
+      <div class="trophy">🏆</div>
+      <div class="label">Champion</div>
+      <div class="champ-name">${champ || '?'}</div>
+    </div>`;
+  bracket.appendChild(champWrap);
+
+  // Info bar
+  const info = document.getElementById('info-bar');
+  info.innerHTML = `
+    <div class="badge">Players: <span>${NUM_PLAYERS}</span></div>
+    <div class="badge">Byes: <span>${NUM_BYES}</span></div>
+    <div class="badge">Rounds: <span>4</span></div>
+    ${champ ? `<div class="badge">Champion: <span>${champ}</span></div>` : ''}
+  `;
+}
+
+function getRoundHeight(ri) {
+  // Each round doubles the spacing
+  const baseMatchHeight = 90;
+  const baseRoundMatches = 8;
+  return baseRoundMatches * baseMatchHeight;
+}
+
+document.getElementById('btn-generate').addEventListener('click', generate);
+document.getElementById('btn-reset').addEventListener('click', () => {
+  rounds = [];
+  document.getElementById('bracket-wrap').style.display = 'none';
+  document.getElementById('names-input').value = '';
+  showError('');
+});
+
+// Allow Ctrl+Enter to generate
+document.getElementById('names-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) generate();
+});
+</script>
+</body>
+</html>
